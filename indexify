@@ -1,0 +1,22 @@
+#! /bin/sh
+
+DATABASE=$1
+shift
+TABLE=$1
+shift
+FILE=$1
+shift
+
+if [ -z "${SEPARATOR}" ]; then
+  SEPARATOR=","
+fi
+
+generate_ddl() {
+  echo "create table ${TABLE} ( $(head -n1 $FILE | sed "s/${SEPARATOR}/,/g") );"
+  for i in "$@"; do
+    echo "create index ${TABLE}_${i} on ${TABLE}(${i});"
+  done
+}
+
+generate_ddl "$@" | sqlite3 "${DATABASE}"
+tail -n +2 "${FILE}" | sed 's/"//g' | sqlite3 -separator "${SEPARATOR}" "${DATABASE}" ".import /dev/stdin ${TABLE}"
